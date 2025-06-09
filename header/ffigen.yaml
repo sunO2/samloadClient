@@ -5,7 +5,7 @@ output: '../lib/clib/firmwarelib.dart' # 生成的 Dart 文件路径
 
 headers:
   entry-points:
-    - 'header/libfirmwarelib.h' # 指定你的头文件路径
+    - './libfirmwarelib.h' # 指定你的头文件路径
   # 如果你的头文件有其他依赖的头文件在非标准路径下，可以使用 include-directives
   # include-directives:
   #   - 'path/to/another_include_dir/**.h'
