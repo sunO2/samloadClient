@@ -1,0 +1,44 @@
+name: Flutter CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x' # 可以根据需要指定 Flutter 版本
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-9 libclang-9-dev # 添加 -y 避免交互式确认
+
+      - name: Get Flutter packages
+        run: flutter pub get
+
+      - name: Get Flutter packages
+        run: dart run ffigen --config header/ffigen.yaml
+
+    #   - name: Build Flutter app (Android)
+    #     run: flutter build apk
+
+    #   - name: Build Flutter app (iOS)
+    #     run: flutter build ios --no-codesign # --no-codesign 避免在 CI 环境中需要代码签名
+
+    #   - name: Build Flutter app (Linux)
+    #     run: flutter build linux
+
+    #   - name: Build Flutter app (Web)
+    #     run: flutter build web
