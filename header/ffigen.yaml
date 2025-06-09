@@ -1,0 +1,30 @@
+# ffigen.yaml
+name: MyNativeBindings # 生成的 Dart 类名
+description: Bindings for my native library.
+output: 'lib/clib/firmwarelib.dart' # 生成的 Dart 文件路径
+
+headers:
+  entry-points:
+    - 'header/libfirmwarelib.h' # 指定你的头文件路径
+  # 如果你的头文件有其他依赖的头文件在非标准路径下，可以使用 include-directives
+  # include-directives:
+  #   - 'path/to/another_include_dir/**.h'
+
+# 如果你的 C 代码需要特定的编译选项，例如宏定义或额外的 include 路径，可以在这里指定
+# compiler-opts:
+#   - '-D_MY_MACRO_'
+#   - '-I/path/to/another/include'
+
+# 可以配置生成的代码的注释风格
+comments:
+  style: any
+  length: full
+
+# 如果你希望 ffigen 生成的函数名遵循特定的规则，可以使用 functions 部分进行配置
+# functions:
+#   include:
+#     - 'my_function_prefix_.*' # 只生成以 'my_function_prefix_' 开头的函数
+#   rename:
+#     'old_function_name': 'new_function_name'
+
+# 更多配置选项请参考 ffigen 官方文档
