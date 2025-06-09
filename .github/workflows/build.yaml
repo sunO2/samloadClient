@@ -29,7 +29,7 @@ jobs:
         run: flutter pub get
 
       - name: Get Flutter packages
-        run: dart run ffigen --config header/ffigen.yaml && ls ./lib/clib/firmwarelib.dart
+        run: dart run ffigen --config header/ffigen.yaml && cat ./lib/clib/firmwarelib.dart
 
 
     #   - name: Build Flutter app (Android)
