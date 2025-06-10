@@ -2,7 +2,7 @@
 
 /* package samsung-firmware-tool/pkg/firmwarelib */
 
-
+#include <stdint.h> // Required for intptr_t
 #line 1 "cgo-builtin-export-prolog"
 
 #include <stddef.h>
@@ -103,32 +103,53 @@ static void post_dart_message_from_c(int type, long current, long max, long bps)
     }
 
     Dart_CObject* type_obj = (Dart_CObject*)malloc(sizeof(Dart_CObject));
-    if (type_obj == NULL) goto cleanup_array_values;
+    if (type_obj == NULL) {
+        free(message->value.as_array.values);
+        free(message);
+        return;
+    }
     type_obj->type = Dart_CObject_kInt64; // Should be 3
     type_obj->value.as_int64 = type;
     message->value.as_array.values[0] = type_obj;
 
     Dart_CObject* current_obj = (Dart_CObject*)malloc(sizeof(Dart_CObject));
-    if (current_obj == NULL) goto cleanup_array_values;
+    if (current_obj == NULL) {
+        free(type_obj);
+        free(message->value.as_array.values);
+        free(message);
+        return;
+    }
     current_obj->type = Dart_CObject_kInt64; // Should be 3
     current_obj->value.as_int64 = current;
     message->value.as_array.values[1] = current_obj;
 
     Dart_CObject* max_obj = (Dart_CObject*)malloc(sizeof(Dart_CObject));
-    if (max_obj == NULL) goto cleanup_array_values;
+    if (max_obj == NULL) {
+        free(type_obj);
+        free(current_obj);
+        free(message->value.as_array.values);
+        free(message);
+        return;
+    }
     max_obj->type = Dart_CObject_kInt64; // Should be 3
     max_obj->value.as_int64 = max;
     message->value.as_array.values[2] = max_obj;
 
     Dart_CObject* bps_obj = (Dart_CObject*)malloc(sizeof(Dart_CObject));
-    if (bps_obj == NULL) goto cleanup_array_values;
+    if (bps_obj == NULL) {
+        free(type_obj);
+        free(current_obj);
+        free(max_obj);
+        free(message->value.as_array.values);
+        free(message);
+        return;
+    }
     bps_obj->type = Dart_CObject_kInt64; // Should be 3
     bps_obj->value.as_int64 = bps;
     message->value.as_array.values[3] = bps_obj;
 
     Dart_PostCObject_Fn(global_dart_send_port_id, message);
 
-cleanup_array_values:
     // Free the allocated memory for the array values and the message itself
     for (int i = 0; i < message->value.as_array.length; ++i) {
         if (message->value.as_array.values[i] != NULL) {
