@@ -228,7 +228,7 @@ extern "C" {
 extern void SetDartPostCObject(void* ptr);
 extern void SetDartSendPortID(long long int portID);
 extern char* CheckFirmwareVersion(char* modelC, char* regionC);
-extern char* DownloadFirmware(char* modelC, char* regionC, char* fwVersionC, char* imeiSerialC, char* outputPathC);
+extern char* DownloadFirmware(char* modelC, char* regionC, char* fwVersionC, char* imeiSerialC, char* outputPathC, progressCallback progressCb);
 extern char* DecryptFirmware(char* inputPathC, char* outputPathC, char* fwVersionC, char* modelC, char* regionC, char* imeiSerialC);
 
 // FreeString is a C-callable function to free memory allocated by C.CString

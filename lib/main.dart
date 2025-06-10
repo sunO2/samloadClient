@@ -7,8 +7,14 @@ import 'dart:ffi' as ffi;
 import 'package:ffi/ffi.dart';
 import 'dart:isolate'; // For Isolate communication
 import 'dart:async'; // For Completer
+import 'package:flutter/widgets.dart'; // For WidgetsFlutterBinding
+import 'dart:developer'; // For NativeApi.postCObject
+import 'dart:ffi'; // For Dart_PostCObject_DL
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 引擎已初始化
+  // 初始化 Dart_PostCObject_DL，以便在辅助 Isolate 中使用
+  // Dart_PostCObject_DL.initialize(NativeApi.initializeMessagePort); // 这一行是旧的 API，不再需要
   runApp(const MyApp());
 }
 
@@ -190,7 +196,15 @@ class _MyHomePageState extends State<MyHomePage> {
     final completer = Completer<String>();
 
     receivePort.listen((message) {
-      if (message is Map<String, dynamic>) {
+      if (message is List<dynamic>) {
+        final current = message[1];
+        final max = message[2];
+        final progress = (max > 0) ? current / max : 0.0;
+        setState(() {
+          _downloadProgress = progress;
+          _downloadStatus = '下载中...';
+        });
+      } else if (message is Map<String, dynamic>) {
         final type = message['type'];
         if (type == 'progress') {
           setState(() {
@@ -216,6 +230,8 @@ class _MyHomePageState extends State<MyHomePage> {
         'imeiSerial': imeiSerial,
         'outputPath': outputPath,
         'progressCbPtr': _progressCbPtr.address, // 传递指针地址
+        'postCObjectFunction':
+            NativeApi.postCObject, // 传递 NativeApi.postCObject 函数指针本身
       });
       final downloadResult = await completer.future;
       setState(() {
@@ -237,6 +253,11 @@ class _MyHomePageState extends State<MyHomePage> {
     final imeiSerial = message['imeiSerial'] as String;
     final outputPath = message['outputPath'] as String;
     final progressCbPtrAddress = message['progressCbPtr'] as int; // 获取指针地址
+    final postCObjectFunction =
+        message['postCObjectFunction']
+            as ffi.Pointer<
+              ffi.NativeFunction<Dart_PostCObject_TypeFunction>
+            >; // 获取 NativeApi.postCObject 函数指针
 
     final bindings = FirmwareLibBindings(
       Platform.isAndroid
@@ -249,6 +270,11 @@ class _MyHomePageState extends State<MyHomePage> {
           ? ffi.DynamicLibrary.open('firmwarelib.dll')
           : throw UnsupportedError('Unsupported platform'),
     );
+
+    // 设置 Dart_PostCObject 函数指针，用于从 C 向 Dart 发送消息
+    bindings.SetDartPostCObject(postCObjectFunction.cast<ffi.Void>());
+    // 设置 Dart SendPort ID，用于 C 代码知道将消息发送到哪个端口
+    bindings.SetDartSendPortID(sendPort.nativePort);
 
     // 将 Dart 字符串转换为 C 字符串指针
     final modelC = model.toNativeUtf8().cast<ffi.Char>();
@@ -270,7 +296,6 @@ class _MyHomePageState extends State<MyHomePage> {
         fwVersionC,
         imeiSerialC,
         outputPathC,
-        progressCbPtr.cast<ffi.Void>(), // 传递回调函数指针
       );
 
       final result = resultC.cast<Utf8>().toDartString();
@@ -393,12 +418,6 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(height: 10),
               Text(
                 '下载状态: $_downloadStatus (${(_downloadProgress * 100).toStringAsFixed(1)}%)',
-              ),
-              const SizedBox(height: 20), // 添加一些间距
-              const Text('固件版本查询结果:'),
-              Text(
-                _firmwareVersion,
-                style: Theme.of(context).textTheme.headlineMedium,
               ),
             ],
           ),

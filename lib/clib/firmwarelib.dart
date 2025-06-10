@@ -1627,6 +1627,85 @@ class FirmwareLibBindings {
   late final _getloadavg = _getloadavgPtr
       .asFunction<int Function(ffi.Pointer<ffi.Double>, int)>();
 
+  /// Global variable to store the Dart_PostCObject function pointer
+  late final ffi.Pointer<Dart_PostCObject_Type> _Dart_PostCObject_Fn =
+      _lookup<Dart_PostCObject_Type>('Dart_PostCObject_Fn');
+
+  Dart_PostCObject_Type get Dart_PostCObject_Fn => _Dart_PostCObject_Fn.value;
+
+  set Dart_PostCObject_Fn(Dart_PostCObject_Type value) =>
+      _Dart_PostCObject_Fn.value = value;
+
+  /// Global variable to store the Dart SendPort ID
+  late final ffi.Pointer<Dart_Port> _global_dart_send_port_id =
+      _lookup<Dart_Port>('global_dart_send_port_id');
+
+  DartDart_Port get global_dart_send_port_id => _global_dart_send_port_id.value;
+
+  set global_dart_send_port_id(DartDart_Port value) =>
+      _global_dart_send_port_id.value = value;
+
+  /// A C function to set the Dart_PostCObject function pointer
+  void set_dart_post_c_object(Dart_PostCObject_Type func) {
+    return _set_dart_post_c_object(func);
+  }
+
+  late final _set_dart_post_c_objectPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(Dart_PostCObject_Type)>>(
+        'set_dart_post_c_object',
+      );
+  late final _set_dart_post_c_object = _set_dart_post_c_objectPtr
+      .asFunction<void Function(Dart_PostCObject_Type)>();
+
+  /// A C function to set the global Dart SendPort ID
+  void set_global_dart_send_port_id(int port_id) {
+    return _set_global_dart_send_port_id(port_id);
+  }
+
+  late final _set_global_dart_send_port_idPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(Dart_Port)>>(
+        'set_global_dart_send_port_id',
+      );
+  late final _set_global_dart_send_port_id = _set_global_dart_send_port_idPtr
+      .asFunction<void Function(int)>();
+
+  /// A C function to post a message to Dart
+  /// type: 0 for progress update
+  void post_dart_message_from_c(int type, int current, int max, int bps) {
+    return _post_dart_message_from_c(type, current, max, bps);
+  }
+
+  late final _post_dart_message_from_cPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Int, ffi.Long, ffi.Long, ffi.Long)
+        >
+      >('post_dart_message_from_c');
+  late final _post_dart_message_from_c = _post_dart_message_from_cPtr
+      .asFunction<void Function(int, int, int, int)>();
+
+  void SetDartPostCObject(ffi.Pointer<ffi.Void> ptr) {
+    return _SetDartPostCObject(ptr);
+  }
+
+  late final _SetDartPostCObjectPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'SetDartPostCObject',
+      );
+  late final _SetDartPostCObject =
+      _SetDartPostCObjectPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void SetDartSendPortID(int portID) {
+    return _SetDartSendPortID(portID);
+  }
+
+  late final _SetDartSendPortIDPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.LongLong)>>(
+        'SetDartSendPortID',
+      );
+  late final _SetDartSendPortID =
+      _SetDartSendPortIDPtr.asFunction<void Function(int)>();
+
   ffi.Pointer<ffi.Char> CheckFirmwareVersion(
     ffi.Pointer<ffi.Char> modelC,
     ffi.Pointer<ffi.Char> regionC,
@@ -1657,7 +1736,6 @@ class FirmwareLibBindings {
     ffi.Pointer<ffi.Char> fwVersionC,
     ffi.Pointer<ffi.Char> imeiSerialC,
     ffi.Pointer<ffi.Char> outputPathC,
-    ffi.Pointer<ffi.Void> progressCbPtr,
   ) {
     return _DownloadFirmware(
       modelC,
@@ -1665,7 +1743,6 @@ class FirmwareLibBindings {
       fwVersionC,
       imeiSerialC,
       outputPathC,
-      progressCbPtr,
     );
   }
 
@@ -1678,7 +1755,6 @@ class FirmwareLibBindings {
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
-            ffi.Pointer<ffi.Void>,
           )
         >
       >('DownloadFirmware');
@@ -1690,7 +1766,6 @@ class FirmwareLibBindings {
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
-          ffi.Pointer<ffi.Void>,
         )
       >();
 
@@ -1701,7 +1776,6 @@ class FirmwareLibBindings {
     ffi.Pointer<ffi.Char> modelC,
     ffi.Pointer<ffi.Char> regionC,
     ffi.Pointer<ffi.Char> imeiSerialC,
-    ffi.Pointer<ffi.Void> progressCbPtr,
   ) {
     return _DecryptFirmware(
       inputPathC,
@@ -1710,7 +1784,6 @@ class FirmwareLibBindings {
       modelC,
       regionC,
       imeiSerialC,
-      progressCbPtr,
     );
   }
 
@@ -1724,7 +1797,6 @@ class FirmwareLibBindings {
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
-            ffi.Pointer<ffi.Void>,
           )
         >
       >('DecryptFirmware');
@@ -1737,7 +1809,6 @@ class FirmwareLibBindings {
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
-          ffi.Pointer<ffi.Void>,
         )
       >();
 
@@ -1754,49 +1825,6 @@ class FirmwareLibBindings {
       );
   late final _FreeString =
       _FreeStringPtr.asFunction<void Function(ffi.Pointer<ffi.Char>)>();
-}
-
-typedef ptrdiff_t = ffi.Long;
-typedef Dartptrdiff_t = int;
-
-final class max_align_t extends ffi.Opaque {}
-
-final class _GoString_ extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> p;
-
-  @ptrdiff_t()
-  external int n;
-}
-
-typedef _Float32 = ffi.Float;
-typedef Dart_Float32 = double;
-typedef _Float64 = ffi.Double;
-typedef Dart_Float64 = double;
-typedef _Float32x = ffi.Double;
-typedef Dart_Float32x = double;
-
-final class div_t extends ffi.Struct {
-  @ffi.Int()
-  external int quot;
-
-  @ffi.Int()
-  external int rem;
-}
-
-final class ldiv_t extends ffi.Struct {
-  @ffi.Long()
-  external int quot;
-
-  @ffi.Long()
-  external int rem;
-}
-
-final class lldiv_t extends ffi.Struct {
-  @ffi.LongLong()
-  external int quot;
-
-  @ffi.LongLong()
-  external int rem;
 }
 
 typedef __u_char = ffi.UnsignedChar;
@@ -1918,6 +1946,75 @@ typedef __socklen_t = ffi.UnsignedInt;
 typedef Dart__socklen_t = int;
 typedef __sig_atomic_t = ffi.Int;
 typedef Dart__sig_atomic_t = int;
+typedef int_least8_t = __int_least8_t;
+typedef int_least16_t = __int_least16_t;
+typedef int_least32_t = __int_least32_t;
+typedef int_least64_t = __int_least64_t;
+typedef uint_least8_t = __uint_least8_t;
+typedef uint_least16_t = __uint_least16_t;
+typedef uint_least32_t = __uint_least32_t;
+typedef uint_least64_t = __uint_least64_t;
+typedef int_fast8_t = ffi.SignedChar;
+typedef Dartint_fast8_t = int;
+typedef int_fast16_t = ffi.Long;
+typedef Dartint_fast16_t = int;
+typedef int_fast32_t = ffi.Long;
+typedef Dartint_fast32_t = int;
+typedef int_fast64_t = ffi.Long;
+typedef Dartint_fast64_t = int;
+typedef uint_fast8_t = ffi.UnsignedChar;
+typedef Dartuint_fast8_t = int;
+typedef uint_fast16_t = ffi.UnsignedLong;
+typedef Dartuint_fast16_t = int;
+typedef uint_fast32_t = ffi.UnsignedLong;
+typedef Dartuint_fast32_t = int;
+typedef uint_fast64_t = ffi.UnsignedLong;
+typedef Dartuint_fast64_t = int;
+typedef intmax_t = __intmax_t;
+typedef uintmax_t = __uintmax_t;
+typedef ptrdiff_t = ffi.Long;
+typedef Dartptrdiff_t = int;
+
+final class max_align_t extends ffi.Opaque {}
+
+final class _GoString_ extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> p;
+
+  @ptrdiff_t()
+  external int n;
+}
+
+typedef _Float32 = ffi.Float;
+typedef Dart_Float32 = double;
+typedef _Float64 = ffi.Double;
+typedef Dart_Float64 = double;
+typedef _Float32x = ffi.Double;
+typedef Dart_Float32x = double;
+
+final class div_t extends ffi.Struct {
+  @ffi.Int()
+  external int quot;
+
+  @ffi.Int()
+  external int rem;
+}
+
+final class ldiv_t extends ffi.Struct {
+  @ffi.Long()
+  external int quot;
+
+  @ffi.Long()
+  external int rem;
+}
+
+final class lldiv_t extends ffi.Struct {
+  @ffi.LongLong()
+  external int quot;
+
+  @ffi.LongLong()
+  external int rem;
+}
+
 typedef u_char = __u_char;
 typedef u_short = __u_short;
 typedef u_int = __u_int;
@@ -2244,10 +2341,113 @@ typedef __compar_fn_tFunction =
 typedef Dart__compar_fn_tFunction =
     int Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Void>);
 typedef __compar_fn_t = ffi.Pointer<ffi.NativeFunction<__compar_fn_tFunction>>;
+
+/// Dart C API declarations (from dart_api.h)
+/// This is a simplified but more complete version for CGO.
+typedef Dart_Port = ffi.Int64;
+typedef DartDart_Port = int;
+
+enum Dart_CObject_Type {
+  Dart_CObject_kNull(0),
+  Dart_CObject_kBool(1),
+  Dart_CObject_kInt32(2),
+
+  /// Value 3
+  Dart_CObject_kInt64(3),
+  Dart_CObject_kDouble(4),
+  Dart_CObject_kString(5),
+
+  /// Value 6
+  Dart_CObject_kArray(6),
+  Dart_CObject_kTypedData(7),
+  Dart_CObject_kExternalTypedData(8),
+  Dart_CObject_kSendPort(9),
+  Dart_CObject_kCapability(10),
+  Dart_CObject_kNativePointer(11),
+  Dart_CObject_kUnsupported(12),
+  Dart_CObject_kNumberOfTypes(13);
+
+  final int value;
+  const Dart_CObject_Type(this.value);
+
+  static Dart_CObject_Type fromValue(int value) => switch (value) {
+    0 => Dart_CObject_kNull,
+    1 => Dart_CObject_kBool,
+    2 => Dart_CObject_kInt32,
+    3 => Dart_CObject_kInt64,
+    4 => Dart_CObject_kDouble,
+    5 => Dart_CObject_kString,
+    6 => Dart_CObject_kArray,
+    7 => Dart_CObject_kTypedData,
+    8 => Dart_CObject_kExternalTypedData,
+    9 => Dart_CObject_kSendPort,
+    10 => Dart_CObject_kCapability,
+    11 => Dart_CObject_kNativePointer,
+    12 => Dart_CObject_kUnsupported,
+    13 => Dart_CObject_kNumberOfTypes,
+    _ => throw ArgumentError('Unknown value for Dart_CObject_Type: $value'),
+  };
+}
+
+final class UnnamedStruct2 extends ffi.Struct {
+  @ffi.IntPtr()
+  external int length;
+
+  external ffi.Pointer<ffi.Pointer<_Dart_CObject>> values;
+}
+
+final class UnnamedStruct3 extends ffi.Struct {
+  @Dart_Port()
+  external int id;
+
+  @Dart_Port()
+  external int origin_id;
+}
+
+final class UnnamedUnion1 extends ffi.Union {
+  @ffi.Bool()
+  external bool as_bool;
+
+  @ffi.Int32()
+  external int as_int32;
+
+  @ffi.Int64()
+  external int as_int64;
+
+  @ffi.Double()
+  external double as_double;
+
+  external ffi.Pointer<ffi.Char> as_string;
+
+  external UnnamedStruct2 as_array;
+
+  external UnnamedStruct3 as_send_port;
+
+  external ffi.Pointer<ffi.Void> as_native_pointer;
+}
+
+final class _Dart_CObject extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int typeAsInt;
+
+  Dart_CObject_Type get type => Dart_CObject_Type.fromValue(typeAsInt);
+
+  external UnnamedUnion1 value;
+}
+
+typedef Dart_CObject = _Dart_CObject;
+typedef Dart_PostCObject_TypeFunction =
+    ffi.Bool Function(Dart_Port port, ffi.Pointer<Dart_CObject> message);
+typedef DartDart_PostCObject_TypeFunction =
+    bool Function(DartDart_Port port, ffi.Pointer<Dart_CObject> message);
+typedef Dart_PostCObject_Type =
+    ffi.Pointer<ffi.NativeFunction<Dart_PostCObject_TypeFunction>>;
 typedef progressCallbackFunction =
     ffi.Void Function(ffi.Long current, ffi.Long max, ffi.Long bps);
 typedef DartprogressCallbackFunction =
     void Function(int current, int max, int bps);
+
+/// A C function to call the Go-provided C callback
 typedef progressCallback =
     ffi.Pointer<ffi.NativeFunction<progressCallbackFunction>>;
 typedef GoInt8 = ffi.SignedChar;
@@ -2294,7 +2494,7 @@ final class GoSlice extends ffi.Struct {
   external int cap;
 }
 
-const int NULL = 0;
+const int _STDINT_H = 1;
 
 const int _FEATURES_H = 1;
 
@@ -2390,6 +2590,140 @@ const int __GLIBC_USE_IEC_60559_FUNCS_EXT_C2X = 1;
 
 const int __GLIBC_USE_IEC_60559_TYPES_EXT = 1;
 
+const int _BITS_TYPES_H = 1;
+
+const int _BITS_TYPESIZES_H = 1;
+
+const int __OFF_T_MATCHES_OFF64_T = 1;
+
+const int __INO_T_MATCHES_INO64_T = 1;
+
+const int __RLIM_T_MATCHES_RLIM64_T = 1;
+
+const int __STATFS_MATCHES_STATFS64 = 1;
+
+const int __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64 = 1;
+
+const int __FD_SETSIZE = 1024;
+
+const int _BITS_TIME64_H = 1;
+
+const int _BITS_WCHAR_H = 1;
+
+const int __WCHAR_MAX = 2147483647;
+
+const int __WCHAR_MIN = -2147483648;
+
+const int _BITS_STDINT_INTN_H = 1;
+
+const int _BITS_STDINT_UINTN_H = 1;
+
+const int _BITS_STDINT_LEAST_H = 1;
+
+const int INT8_MIN = -128;
+
+const int INT16_MIN = -32768;
+
+const int INT32_MIN = -2147483648;
+
+const int INT64_MIN = -9223372036854775808;
+
+const int INT8_MAX = 127;
+
+const int INT16_MAX = 32767;
+
+const int INT32_MAX = 2147483647;
+
+const int INT64_MAX = 9223372036854775807;
+
+const int UINT8_MAX = 255;
+
+const int UINT16_MAX = 65535;
+
+const int UINT32_MAX = 4294967295;
+
+const int UINT64_MAX = -1;
+
+const int INT_LEAST8_MIN = -128;
+
+const int INT_LEAST16_MIN = -32768;
+
+const int INT_LEAST32_MIN = -2147483648;
+
+const int INT_LEAST64_MIN = -9223372036854775808;
+
+const int INT_LEAST8_MAX = 127;
+
+const int INT_LEAST16_MAX = 32767;
+
+const int INT_LEAST32_MAX = 2147483647;
+
+const int INT_LEAST64_MAX = 9223372036854775807;
+
+const int UINT_LEAST8_MAX = 255;
+
+const int UINT_LEAST16_MAX = 65535;
+
+const int UINT_LEAST32_MAX = 4294967295;
+
+const int UINT_LEAST64_MAX = -1;
+
+const int INT_FAST8_MIN = -128;
+
+const int INT_FAST16_MIN = -9223372036854775808;
+
+const int INT_FAST32_MIN = -9223372036854775808;
+
+const int INT_FAST64_MIN = -9223372036854775808;
+
+const int INT_FAST8_MAX = 127;
+
+const int INT_FAST16_MAX = 9223372036854775807;
+
+const int INT_FAST32_MAX = 9223372036854775807;
+
+const int INT_FAST64_MAX = 9223372036854775807;
+
+const int UINT_FAST8_MAX = 255;
+
+const int UINT_FAST16_MAX = -1;
+
+const int UINT_FAST32_MAX = -1;
+
+const int UINT_FAST64_MAX = -1;
+
+const int INTPTR_MIN = -9223372036854775808;
+
+const int INTPTR_MAX = 9223372036854775807;
+
+const int UINTPTR_MAX = -1;
+
+const int INTMAX_MIN = -9223372036854775808;
+
+const int INTMAX_MAX = 9223372036854775807;
+
+const int UINTMAX_MAX = -1;
+
+const int PTRDIFF_MIN = -9223372036854775808;
+
+const int PTRDIFF_MAX = 9223372036854775807;
+
+const int SIG_ATOMIC_MIN = -2147483648;
+
+const int SIG_ATOMIC_MAX = 2147483647;
+
+const int SIZE_MAX = -1;
+
+const int WCHAR_MIN = -2147483648;
+
+const int WCHAR_MAX = 2147483647;
+
+const int WINT_MIN = 0;
+
+const int WINT_MAX = 4294967295;
+
+const int NULL = 0;
+
 const int _STDLIB_H = 1;
 
 const int WNOHANG = 1;
@@ -2460,24 +2794,6 @@ const int EXIT_SUCCESS = 0;
 
 const int _SYS_TYPES_H = 1;
 
-const int _BITS_TYPES_H = 1;
-
-const int _BITS_TYPESIZES_H = 1;
-
-const int __OFF_T_MATCHES_OFF64_T = 1;
-
-const int __INO_T_MATCHES_INO64_T = 1;
-
-const int __RLIM_T_MATCHES_RLIM64_T = 1;
-
-const int __STATFS_MATCHES_STATFS64 = 1;
-
-const int __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64 = 1;
-
-const int __FD_SETSIZE = 1024;
-
-const int _BITS_TIME64_H = 1;
-
 const int __clock_t_defined = 1;
 
 const int __clockid_t_defined = 1;
@@ -2485,8 +2801,6 @@ const int __clockid_t_defined = 1;
 const int __time_t_defined = 1;
 
 const int __timer_t_defined = 1;
-
-const int _BITS_STDINT_INTN_H = 1;
 
 const int __BIT_TYPES_DEFINED__ = 1;
 
@@ -2567,3 +2881,9 @@ const int __PTHREAD_RWLOCK_ELISION_EXTRA = 0;
 const int __have_pthread_attr_t = 1;
 
 const int _ALLOCA_H = 1;
+
+const int __bool_true_false_are_defined = 1;
+
+const int true$ = 1;
+
+const int false$ = 0;
