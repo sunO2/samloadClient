@@ -1627,84 +1627,68 @@ class FirmwareLibBindings {
   late final _getloadavg = _getloadavgPtr
       .asFunction<int Function(ffi.Pointer<ffi.Double>, int)>();
 
-  /// Global variable to store the Dart_PostCObject function pointer
-  late final ffi.Pointer<Dart_PostCObject_Type> _Dart_PostCObject_Fn =
-      _lookup<Dart_PostCObject_Type>('Dart_PostCObject_Fn');
-
-  Dart_PostCObject_Type get Dart_PostCObject_Fn => _Dart_PostCObject_Fn.value;
-
-  set Dart_PostCObject_Fn(Dart_PostCObject_Type value) =>
-      _Dart_PostCObject_Fn.value = value;
-
-  /// Global variable to store the Dart SendPort ID
-  late final ffi.Pointer<Dart_Port> _global_dart_send_port_id =
-      _lookup<Dart_Port>('global_dart_send_port_id');
-
-  DartDart_Port get global_dart_send_port_id => _global_dart_send_port_id.value;
-
-  set global_dart_send_port_id(DartDart_Port value) =>
-      _global_dart_send_port_id.value = value;
-
-  /// A C function to set the Dart_PostCObject function pointer
-  void set_dart_post_c_object(Dart_PostCObject_Type func) {
-    return _set_dart_post_c_object(func);
-  }
-
-  late final _set_dart_post_c_objectPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(Dart_PostCObject_Type)>>(
-        'set_dart_post_c_object',
-      );
-  late final _set_dart_post_c_object = _set_dart_post_c_objectPtr
-      .asFunction<void Function(Dart_PostCObject_Type)>();
-
-  /// A C function to set the global Dart SendPort ID
-  void set_global_dart_send_port_id(int port_id) {
-    return _set_global_dart_send_port_id(port_id);
-  }
-
-  late final _set_global_dart_send_port_idPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(Dart_Port)>>(
-        'set_global_dart_send_port_id',
-      );
-  late final _set_global_dart_send_port_id = _set_global_dart_send_port_idPtr
-      .asFunction<void Function(int)>();
-
-  /// A C function to post a message to Dart
+  /// A C function to post a message to Dart using the provided handle
   /// type: 0 for progress update
-  void post_dart_message_from_c(int type, int current, int max, int bps) {
-    return _post_dart_message_from_c(type, current, max, bps);
+  void post_dart_message_from_c(
+    ffi.Pointer<Dart_Callback_Handle> handle,
+    int type,
+    int current,
+    int max,
+    int bps,
+  ) {
+    return _post_dart_message_from_c(handle, type, current, max, bps);
   }
 
   late final _post_dart_message_from_cPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Void Function(ffi.Int, ffi.Long, ffi.Long, ffi.Long)
+          ffi.Void Function(
+            ffi.Pointer<Dart_Callback_Handle>,
+            ffi.Int,
+            ffi.Long,
+            ffi.Long,
+            ffi.Long,
+          )
         >
       >('post_dart_message_from_c');
   late final _post_dart_message_from_c = _post_dart_message_from_cPtr
-      .asFunction<void Function(int, int, int, int)>();
+      .asFunction<
+        void Function(ffi.Pointer<Dart_Callback_Handle>, int, int, int, int)
+      >();
 
-  void SetDartPostCObject(ffi.Pointer<ffi.Void> ptr) {
-    return _SetDartPostCObject(ptr);
+  ffi.Pointer<Dart_Callback_Handle> NewDartCallbackHandle(
+    int sendPortID,
+    ffi.Pointer<ffi.Void> postCObjectPtr,
+  ) {
+    return _NewDartCallbackHandle(sendPortID, postCObjectPtr);
   }
 
-  late final _SetDartPostCObjectPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-        'SetDartPostCObject',
-      );
-  late final _SetDartPostCObject =
-      _SetDartPostCObjectPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+  late final _NewDartCallbackHandlePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<Dart_Callback_Handle> Function(
+            ffi.LongLong,
+            ffi.Pointer<ffi.Void>,
+          )
+        >
+      >('NewDartCallbackHandle');
+  late final _NewDartCallbackHandle =
+      _NewDartCallbackHandlePtr.asFunction<
+        ffi.Pointer<Dart_Callback_Handle> Function(int, ffi.Pointer<ffi.Void>)
+      >();
 
-  void SetDartSendPortID(int portID) {
-    return _SetDartSendPortID(portID);
+  void FreeDartCallbackHandle(ffi.Pointer<Dart_Callback_Handle> handle) {
+    return _FreeDartCallbackHandle(handle);
   }
 
-  late final _SetDartSendPortIDPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.LongLong)>>(
-        'SetDartSendPortID',
-      );
-  late final _SetDartSendPortID =
-      _SetDartSendPortIDPtr.asFunction<void Function(int)>();
+  late final _FreeDartCallbackHandlePtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Void Function(ffi.Pointer<Dart_Callback_Handle>)>
+      >('FreeDartCallbackHandle');
+  late final _FreeDartCallbackHandle =
+      _FreeDartCallbackHandlePtr.asFunction<
+        void Function(ffi.Pointer<Dart_Callback_Handle>)
+      >();
 
   ffi.Pointer<ffi.Char> CheckFirmwareVersion(
     ffi.Pointer<ffi.Char> modelC,
@@ -1736,6 +1720,7 @@ class FirmwareLibBindings {
     ffi.Pointer<ffi.Char> fwVersionC,
     ffi.Pointer<ffi.Char> imeiSerialC,
     ffi.Pointer<ffi.Char> outputPathC,
+    ffi.Pointer<Dart_Callback_Handle> callbackHandle,
   ) {
     return _DownloadFirmware(
       modelC,
@@ -1743,6 +1728,7 @@ class FirmwareLibBindings {
       fwVersionC,
       imeiSerialC,
       outputPathC,
+      callbackHandle,
     );
   }
 
@@ -1755,6 +1741,7 @@ class FirmwareLibBindings {
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
+            ffi.Pointer<Dart_Callback_Handle>,
           )
         >
       >('DownloadFirmware');
@@ -1766,6 +1753,7 @@ class FirmwareLibBindings {
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
+          ffi.Pointer<Dart_Callback_Handle>,
         )
       >();
 
@@ -1776,6 +1764,7 @@ class FirmwareLibBindings {
     ffi.Pointer<ffi.Char> modelC,
     ffi.Pointer<ffi.Char> regionC,
     ffi.Pointer<ffi.Char> imeiSerialC,
+    ffi.Pointer<Dart_Callback_Handle> callbackHandle,
   ) {
     return _DecryptFirmware(
       inputPathC,
@@ -1784,6 +1773,7 @@ class FirmwareLibBindings {
       modelC,
       regionC,
       imeiSerialC,
+      callbackHandle,
     );
   }
 
@@ -1797,6 +1787,7 @@ class FirmwareLibBindings {
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
+            ffi.Pointer<Dart_Callback_Handle>,
           )
         >
       >('DecryptFirmware');
@@ -1809,6 +1800,7 @@ class FirmwareLibBindings {
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
+          ffi.Pointer<Dart_Callback_Handle>,
         )
       >();
 
@@ -1825,6 +1817,18 @@ class FirmwareLibBindings {
       );
   late final _FreeString =
       _FreeStringPtr.asFunction<void Function(ffi.Pointer<ffi.Char>)>();
+}
+
+typedef ptrdiff_t = ffi.Long;
+typedef Dartptrdiff_t = int;
+
+final class max_align_t extends ffi.Opaque {}
+
+final class _GoString_ extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> p;
+
+  @ptrdiff_t()
+  external int n;
 }
 
 typedef __u_char = ffi.UnsignedChar;
@@ -1972,18 +1976,6 @@ typedef uint_fast64_t = ffi.UnsignedLong;
 typedef Dartuint_fast64_t = int;
 typedef intmax_t = __intmax_t;
 typedef uintmax_t = __uintmax_t;
-typedef ptrdiff_t = ffi.Long;
-typedef Dartptrdiff_t = int;
-
-final class max_align_t extends ffi.Opaque {}
-
-final class _GoString_ extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> p;
-
-  @ptrdiff_t()
-  external int n;
-}
-
 typedef _Float32 = ffi.Float;
 typedef Dart_Float32 = double;
 typedef _Float64 = ffi.Double;
@@ -2442,6 +2434,15 @@ typedef DartDart_PostCObject_TypeFunction =
     bool Function(DartDart_Port port, ffi.Pointer<Dart_CObject> message);
 typedef Dart_PostCObject_Type =
     ffi.Pointer<ffi.NativeFunction<Dart_PostCObject_TypeFunction>>;
+
+/// A C struct to hold the Dart callback information
+final class Dart_Callback_Handle extends ffi.Struct {
+  @Dart_Port()
+  external int send_port_id;
+
+  external Dart_PostCObject_Type post_c_object_fn;
+}
+
 typedef progressCallbackFunction =
     ffi.Void Function(ffi.Long current, ffi.Long max, ffi.Long bps);
 typedef DartprogressCallbackFunction =
@@ -2493,6 +2494,8 @@ final class GoSlice extends ffi.Struct {
   @GoInt()
   external int cap;
 }
+
+const int NULL = 0;
 
 const int _STDINT_H = 1;
 
@@ -2721,8 +2724,6 @@ const int WCHAR_MAX = 2147483647;
 const int WINT_MIN = 0;
 
 const int WINT_MAX = 4294967295;
-
-const int NULL = 0;
 
 const int _STDLIB_H = 1;
 

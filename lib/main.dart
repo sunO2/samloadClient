@@ -252,7 +252,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final fwVersion = message['fwVersion'] as String;
     final imeiSerial = message['imeiSerial'] as String;
     final outputPath = message['outputPath'] as String;
-    final progressCbPtrAddress = message['progressCbPtr'] as int; // 获取指针地址
+    // final progressCbPtrAddress = message['progressCbPtr'] as int; // 获取指针地址
     final postCObjectFunction =
         message['postCObjectFunction']
             as ffi.Pointer<
@@ -272,9 +272,14 @@ class _MyHomePageState extends State<MyHomePage> {
     );
 
     // 设置 Dart_PostCObject 函数指针，用于从 C 向 Dart 发送消息
-    bindings.SetDartPostCObject(postCObjectFunction.cast<ffi.Void>());
-    // 设置 Dart SendPort ID，用于 C 代码知道将消息发送到哪个端口
-    bindings.SetDartSendPortID(sendPort.nativePort);
+    // bindings.SetDartPostCObject();
+    // // 设置 Dart SendPort ID，用于 C 代码知道将消息发送到哪个端口
+    // bindings.SetDartSendPortID(sendPort.nativePort);
+
+    final callback = bindings.NewDartCallbackHandle(
+      sendPort.nativePort,
+      postCObjectFunction.cast<ffi.Void>(),
+    );
 
     // 将 Dart 字符串转换为 C 字符串指针
     final modelC = model.toNativeUtf8().cast<ffi.Char>();
@@ -284,10 +289,10 @@ class _MyHomePageState extends State<MyHomePage> {
     final outputPathC = outputPath.toNativeUtf8().cast<ffi.Char>();
 
     // 从地址重新创建指针
-    final progressCbPtr =
-        ffi.Pointer<ffi.NativeFunction<progressCallbackFunction>>.fromAddress(
-          progressCbPtrAddress,
-        );
+    // final progressCbPtr =
+    //     ffi.Pointer<ffi.NativeFunction<progressCallbackFunction>>.fromAddress(
+    //       progressCbPtrAddress,
+    //     );
 
     try {
       final ffi.Pointer<ffi.Char> resultC = bindings.DownloadFirmware(
@@ -296,6 +301,7 @@ class _MyHomePageState extends State<MyHomePage> {
         fwVersionC,
         imeiSerialC,
         outputPathC,
+        callback,
       );
 
       final result = resultC.cast<Utf8>().toDartString();

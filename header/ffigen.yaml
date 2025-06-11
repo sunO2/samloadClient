@@ -1,6 +1,6 @@
 # ffigen.yaml
-name: MyNativeBindings # 生成的 Dart 类名
-description: Bindings for my native library.
+name: FirmwareLibBindings # 生成的 Dart 类名
+description: Bindings for firmware library.
 output: '../lib/clib/firmwarelib.dart' # 生成的 Dart 文件路径
 
 headers:
