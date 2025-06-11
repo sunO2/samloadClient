@@ -1,15 +1,9 @@
 import 'dart:convert' as convert;
 
-import 'package:firmware_client/clib/firmwarelib.dart';
+import 'package:firmware_client/clib/firmware_client.dart';
 import 'package:flutter/material.dart';
-import 'dart:io'; // For Platform.isAndroid, Platform.isIOS
-import 'dart:ffi' as ffi;
-import 'package:ffi/ffi.dart';
 import 'dart:isolate'; // For Isolate communication
 import 'dart:async'; // For Completer
-import 'package:flutter/widgets.dart'; // For WidgetsFlutterBinding
-import 'dart:developer'; // For NativeApi.postCObject
-import 'dart:ffi'; // For Dart_PostCObject_DL
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 引擎已初始化
@@ -68,14 +62,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  String _firmwareVersion = '未查询'; // 新增状态变量
   double _downloadProgress = 0.0; // 下载进度
   String _downloadStatus = '未开始'; // 下载状态
-
-  late final FirmwareLibBindings bindings;
-  late final ffi.Pointer<ffi.NativeFunction<progressCallbackFunction>>
-  _progressCbPtr; // 声明为类成员
 
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _regionController = TextEditingController();
@@ -84,35 +72,15 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _outputPathController =
       TextEditingController(); // 输出路径控制器
 
+  FirmwareClient? client;
+
   @override
   void initState() {
     super.initState();
     // 根据平台加载不同的动态库
-    if (Platform.isAndroid) {
-      bindings = FirmwareLibBindings(
-        ffi.DynamicLibrary.open('libfirmwarelib.so'),
-      );
-    } else if (Platform.isIOS) {
-      bindings = FirmwareLibBindings(
-        ffi.DynamicLibrary.open('libfirmwarelib.dylib'),
-      );
-    } else if (Platform.isMacOS) {
-      bindings = FirmwareLibBindings(
-        ffi.DynamicLibrary.open('libfirmwarelib.dylib'),
-      );
-    } else if (Platform.isWindows) {
-      bindings = FirmwareLibBindings(
-        ffi.DynamicLibrary.open('firmwarelib.dll'),
-      );
-    } else {
-      throw UnsupportedError('Unsupported platform');
-    }
-
-    // 在主 Isolate 中创建回调函数指针
-    _progressCbPtr = ffi.Pointer.fromFunction<progressCallbackFunction>(
-      _progressCallback, // 使用静态方法
-      // debugName: 'progressCallback', // 可选，用于调试
-    );
+    FirmwareClient().create().then((client) {
+      this.client = client;
+    });
   }
 
   @override
@@ -125,48 +93,24 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  void _incrementCounter() {}
 
-  void _checkFirmware() {
+  void _checkFirmware() async {
     final model = _modelController.text;
     final region = _regionController.text;
-    final fw = _fwController.text;
-    final imei = _imeiController.text;
 
-    // 将 Dart 字符串转换为 C 字符串指针
-    final modelC = model.toNativeUtf8().cast<ffi.Char>();
-    final regionC = region.toNativeUtf8().cast<ffi.Char>();
-    // fw 和 imei 目前没有对应的 C 函数，但为了完整性，也进行转换
-    final fwC = fw.toNativeUtf8().cast<ffi.Char>();
-    final imeiC = imei.toNativeUtf8().cast<ffi.Char>();
+    if (model.isEmpty || region.isEmpty) {
+      setState(() {
+        _downloadStatus = '错误: model 和 region 不能为空';
+      });
+      return;
+    }
 
-    // 调用 C 函数
-    final ffi.Pointer<ffi.Char> resultC = bindings.CheckFirmwareVersion(
-      modelC,
-      regionC,
-    );
-
-    // 将 C 字符串指针转换回 Dart 字符串
-    final result = resultC.cast<Utf8>().toDartString();
-
-    Map<String, dynamic> resultJson = convert.jsonDecode(result);
-    _fwController.text = resultJson['data']['versionCode'];
-
-    // 释放 C 字符串内存
-    // 注意：FreeString 是在 firmwarelib.dart 中定义的，用于释放 C 分配的字符串内存
-    calloc.free(modelC);
-    calloc.free(regionC);
-    calloc.free(fwC);
-    calloc.free(imeiC);
-    bindings.FreeString(resultC); // 释放返回的字符串内存
-
-    setState(() {
-      _firmwareVersion = result;
-    });
+    var result = await client?.checkVersion(model, region);
+    if (null != result) {
+      Map<String, dynamic> resultJson = convert.jsonDecode(result);
+      _fwController.text = resultJson['data']['versionCode'];
+    }
   }
 
   Future<void> _downloadFirmware() async {
@@ -222,17 +166,14 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     try {
-      await Isolate.spawn(_downloadEntrypoint, {
-        'sendPort': receivePort.sendPort,
-        'model': model,
-        'region': region,
-        'fwVersion': fwVersion,
-        'imeiSerial': imeiSerial,
-        'outputPath': outputPath,
-        'progressCbPtr': _progressCbPtr.address, // 传递指针地址
-        'postCObjectFunction':
-            NativeApi.postCObject, // 传递 NativeApi.postCObject 函数指针本身
-      });
+      client?.downloadFirmware(
+        model,
+        region,
+        fwVersion,
+        imeiSerial,
+        outputPath,
+        receivePort.sendPort,
+      );
       final downloadResult = await completer.future;
       setState(() {
         _downloadStatus = '下载完成: $downloadResult';
@@ -242,89 +183,6 @@ class _MyHomePageState extends State<MyHomePage> {
         _downloadStatus = '下载失败: $e';
       });
     }
-  }
-
-  // 新 Isolate 的入口点
-  static void _downloadEntrypoint(Map<String, dynamic> message) {
-    final sendPort = message['sendPort'] as SendPort;
-    final model = message['model'] as String;
-    final region = message['region'] as String;
-    final fwVersion = message['fwVersion'] as String;
-    final imeiSerial = message['imeiSerial'] as String;
-    final outputPath = message['outputPath'] as String;
-    // final progressCbPtrAddress = message['progressCbPtr'] as int; // 获取指针地址
-    final postCObjectFunction =
-        message['postCObjectFunction']
-            as ffi.Pointer<
-              ffi.NativeFunction<Dart_PostCObject_TypeFunction>
-            >; // 获取 NativeApi.postCObject 函数指针
-
-    final bindings = FirmwareLibBindings(
-      Platform.isAndroid
-          ? ffi.DynamicLibrary.open('libfirmwarelib.so')
-          : Platform.isIOS
-          ? ffi.DynamicLibrary.open('libfirmwarelib.dylib')
-          : Platform.isMacOS
-          ? ffi.DynamicLibrary.open('libfirmwarelib.dylib')
-          : Platform.isWindows
-          ? ffi.DynamicLibrary.open('firmwarelib.dll')
-          : throw UnsupportedError('Unsupported platform'),
-    );
-
-    // 设置 Dart_PostCObject 函数指针，用于从 C 向 Dart 发送消息
-    // bindings.SetDartPostCObject();
-    // // 设置 Dart SendPort ID，用于 C 代码知道将消息发送到哪个端口
-    // bindings.SetDartSendPortID(sendPort.nativePort);
-
-    final callback = bindings.NewDartCallbackHandle(
-      sendPort.nativePort,
-      postCObjectFunction.cast<ffi.Void>(),
-    );
-
-    // 将 Dart 字符串转换为 C 字符串指针
-    final modelC = model.toNativeUtf8().cast<ffi.Char>();
-    final regionC = region.toNativeUtf8().cast<ffi.Char>();
-    final fwVersionC = fwVersion.toNativeUtf8().cast<ffi.Char>();
-    final imeiSerialC = imeiSerial.toNativeUtf8().cast<ffi.Char>();
-    final outputPathC = outputPath.toNativeUtf8().cast<ffi.Char>();
-
-    // 从地址重新创建指针
-    // final progressCbPtr =
-    //     ffi.Pointer<ffi.NativeFunction<progressCallbackFunction>>.fromAddress(
-    //       progressCbPtrAddress,
-    //     );
-
-    try {
-      final ffi.Pointer<ffi.Char> resultC = bindings.DownloadFirmware(
-        modelC,
-        regionC,
-        fwVersionC,
-        imeiSerialC,
-        outputPathC,
-        callback,
-      );
-
-      final result = resultC.cast<Utf8>().toDartString();
-      sendPort.send({'type': 'result', 'result': result});
-
-      // 释放 C 字符串内存
-      calloc.free(modelC);
-      calloc.free(regionC);
-      calloc.free(fwVersionC);
-      calloc.free(imeiSerialC);
-      calloc.free(outputPathC);
-      bindings.FreeString(resultC);
-    } catch (e) {
-      sendPort.send({'type': 'error', 'error': e.toString()});
-    }
-  }
-
-  // 静态回调函数，用于接收 C 层的进度更新
-  @pragma('vm:entry-point') // 标记为入口点，防止被 tree-shaking 优化掉
-  static void _progressCallback(int current, int max, int bps) {
-    // 这个函数在主 Isolate 中运行，但它是由 C 代码调用的
-    // 实际的进度更新通过 SendPort 发送到主 Isolate 的 ReceivePort
-    // 这里只是一个占位符，实际的逻辑在 ReceivePort.listen 中处理
   }
 
   @override
