@@ -11,6 +11,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -29,20 +30,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ndk {
-          //  abiFilters.add("arm64-v8a") // 只打包 armeabi-v7a 和 arm64-v8a 架构的库
-            // abiFilters.add("arm64-v8a") // Kotlin DSL 更推荐的写法
-        //}
+        multiDexEnabled = true
+      
     }
-
-    //splits {
-     //   abi {
-            //enable = true
-      //      reset() // 清除默认包含的 ABI
-      //      include("arm64-v8a") // 明确只包含 arm64-v8a
-      //      isUniversalApk = false // 不生成包含所有 ABI 的通用 APK
-      //  }
-    //}
 
     buildTypes {
         release {
@@ -54,14 +44,15 @@ android {
 
     sourceSets {
         getByName("main") {
-            // 指定 jniLibs 目录，这里假设你的 .so 文件放在 app/libs/ 目录下
-            // 路径可以是相对路径，也可以是绝对路径
-            // 注意：如果你使用了默认的 jniLibs 目录，通常不需要这一行
             jniLibs.srcDirs("src/main/jniLibs") // 示例：指向自定义的 libs 目录
-            // 也可以添加多个目录
-            // jniLibs.srcDirs("src/main/libs", "path/to/another/libs")
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.window:window:1.0.0")
+    implementation("androidx.window:window-java:1.0.0")
 }
 
 flutter {
