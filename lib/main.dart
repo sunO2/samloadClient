@@ -4,6 +4,7 @@ import 'package:firmware_client/clib/firmware_client.dart';
 import 'package:flutter/material.dart';
 import 'dart:isolate'; // For Isolate communication
 import 'dart:async'; // For Completer
+import 'package:firmware_client/widget/custom_progress_bar.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 引擎已初始化
@@ -61,9 +62,13 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+enum DownloadStatus { notStarted, downloading, completed, failed }
+
 class _MyHomePageState extends State<MyHomePage> {
   double _downloadProgress = 0.0; // 下载进度
   String _downloadStatus = '未开始'; // 下载状态
+  DownloadStatus _downloadStatusEnum = DownloadStatus.notStarted; // 下载状态枚举\
+  DownloadStatus _checkStatus = DownloadStatus.notStarted; // 查询状态枚举
 
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _regionController = TextEditingController();
@@ -90,6 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _fwController.dispose();
     _imeiController.dispose();
     _outputPathController.dispose();
+    client?.dispose();
     super.dispose();
   }
 
@@ -106,7 +112,18 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
 
+    if (_checkStatus == DownloadStatus.downloading) {
+      return;
+    }
+
+    setState(() {
+      _checkStatus = DownloadStatus.downloading;
+    });
+
     var result = await client?.checkVersion(model, region);
+    setState(() {
+      _checkStatus = DownloadStatus.completed;
+    });
     if (null != result) {
       Map<String, dynamic> resultJson = convert.jsonDecode(result);
       _fwController.text = resultJson['data']['versionCode'];
@@ -117,6 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _downloadProgress = 0.0;
       _downloadStatus = '下载中...';
+      _downloadStatusEnum = DownloadStatus.downloading;
     });
 
     final model = _modelController.text;
@@ -147,6 +165,7 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           _downloadProgress = progress;
           _downloadStatus = '下载中...';
+          _downloadStatusEnum = DownloadStatus.downloading;
         });
       } else if (message is Map<String, dynamic>) {
         final type = message['type'];
@@ -175,55 +194,66 @@ class _MyHomePageState extends State<MyHomePage> {
         receivePort.sendPort,
       );
       final downloadResult = await completer.future;
-      setState(() {
-        _downloadStatus = '下载完成: $downloadResult';
-      });
+      final downloadInfo = convert.jsonDecode(downloadResult);
+      if (downloadInfo['success'] ?? false) {
+        setState(() {
+          _downloadStatus = '下载完成: $downloadResult';
+          _downloadStatusEnum = DownloadStatus.completed;
+        });
+      } else {
+        setState(() {
+          _downloadStatus = '下载失败: ${downloadInfo["message"]}';
+          _downloadStatusEnum = DownloadStatus.failed;
+        });
+      }
     } catch (e) {
       setState(() {
         _downloadStatus = '下载失败: $e';
+        _downloadStatusEnum = DownloadStatus.failed;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Container(
+        margin: EdgeInsets.only(top: 56.0),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            // Column is also a layout widget. It takes a list of children and
-            // arranges them vertically. By default, it sizes itself to fit its
-            // children horizontally, and tries to be as tall as its parent.
-            //
-            // Column has various properties to control how it sizes itself and
-            // how it positions its children. Here we use mainAxisAlignment to
-            // center the children vertically; the main axis here is the vertical
-            // axis because Columns are vertical (the cross axis would be
-            // horizontal).
-            //
-            // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-            // action in the IDE, or press "p" in the console), to see the
-            // wireframe for each widget.
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  ElevatedButton(
+                    onPressed: _checkStatus == DownloadStatus.downloading
+                        ? null
+                        : _checkFirmware,
+                    child: const Text('查询固件版本'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _downloadStatusEnum == DownloadStatus.downloading
+                        ? null
+                        : _downloadFirmware,
+                    child: Text(
+                      _downloadStatusEnum == DownloadStatus.downloading
+                          ? '下载中...'
+                          : _downloadStatusEnum == DownloadStatus.completed
+                          ? "下载完成"
+                          : _downloadStatusEnum == DownloadStatus.failed
+                          ? "重试"
+                          : '下载固件',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20), // 添加一些间距
               TextField(
                 controller: _modelController,
                 decoration: const InputDecoration(
@@ -260,29 +290,27 @@ class _MyHomePageState extends State<MyHomePage> {
                 controller: _outputPathController,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
-                  labelText: '输出路径 (例如: /sdcard/Download/firmware.zip)',
+                  labelText: '输出路径 (例如: /sdcard/Download)',
                 ),
               ),
               const SizedBox(height: 20), // 添加一些间距
-              ElevatedButton(
-                onPressed: _checkFirmware,
-                child: const Text('查询固件版本'),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    child: CustomProgressBar(
+                      progress: _downloadProgress,
+                      height: 10.0,
+                      completedColor: Theme.of(context).primaryColor,
+                      remainingColor: Colors.grey[300]!,
+                      borderRadius: 10.0,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text('${(_downloadProgress * 100).toStringAsFixed(1)}%'),
+                ],
               ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _downloadFirmware,
-                child: const Text('下载固件'),
-              ),
-              const SizedBox(height: 20), // 添加一些间距
-              LinearProgressIndicator(
-                value: _downloadProgress,
-                backgroundColor: Colors.grey[300],
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                '下载状态: $_downloadStatus (${(_downloadProgress * 100).toStringAsFixed(1)}%)',
-              ),
+              Text(_downloadStatus),
             ],
           ),
         ),

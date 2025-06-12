@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:ffi' as ffi;
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
@@ -6,6 +7,9 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:firmware_client/clib/firmwarelib.dart';
+
+typedef FirmwareFunction =
+    void Function(FirmwareMethod method, FirmwareLibBindings bindings);
 
 class FirmwareMethod {
   final String methodName;
@@ -69,6 +73,31 @@ class FirmwareClient {
     );
   }
 
+  decryptFirmware(
+    String model,
+    region,
+    fwVersion,
+    imeiSerial,
+    outputPath,
+    firmwarePath,
+    SendPort downloadPort,
+  ) {
+    sendPort?.send(
+      FirmwareMethod('decryptFirmware', downloadPort, {
+        'model': model,
+        'region': region,
+        'fwVersion': fwVersion,
+        'imeiSerial': imeiSerial,
+        'firmwarePath': firmwarePath,
+        'outputPath': outputPath,
+      }),
+    );
+  }
+
+  dispose() {
+    sendPort?.send('dispose');
+  }
+
   @pragma('vm:entry-point')
   void _subIsolateEntrypoint(SendPort mainSendPort) {
     final bindings = FirmwareLibBindings(
@@ -85,14 +114,21 @@ class FirmwareClient {
 
     ReceivePort subReceivePort = ReceivePort();
     mainSendPort.send(subReceivePort.sendPort);
+    Map<String, FirmwareFunction> functions = HashMap();
+    functions['checkVersion'] = _checkVersion;
+    functions['downloadFirmware'] = _downloadFirmware;
+    functions['decryptFirmware'] = _decryptFirmware;
 
     subReceivePort.listen((message) {
       switch (message) {
-        case FirmwareMethod(methodName: 'checkVersion'):
-          _checkVersion(message, bindings);
-          break;
-        case FirmwareMethod(methodName: 'downloadFirmware'):
-          _downloadFirmware(message, bindings);
+        case "dispose":
+          Isolate.exit();
+        case FirmwareMethod(methodName: var methodName):
+          try {
+            if (functions.containsKey(methodName)) {
+              functions[methodName]!(message, bindings);
+            }
+          } catch (_) {}
           break;
       }
     });
@@ -154,4 +190,6 @@ class FirmwareClient {
     calloc.free(outputPathC);
     bindings.FreeString(resultC);
   }
+
+  _decryptFirmware(FirmwareMethod method, FirmwareLibBindings bindings) {}
 }

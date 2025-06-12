@@ -35,14 +35,14 @@ android {
         //}
     }
 
-    splits {
-        abi {
+    //splits {
+     //   abi {
             //enable = true
-            reset() // 清除默认包含的 ABI
-            include("arm64-v8a") // 明确只包含 arm64-v8a
-            isUniversalApk = false // 不生成包含所有 ABI 的通用 APK
-        }
-    }
+      //      reset() // 清除默认包含的 ABI
+      //      include("arm64-v8a") // 明确只包含 arm64-v8a
+      //      isUniversalApk = false // 不生成包含所有 ABI 的通用 APK
+      //  }
+    //}
 
     buildTypes {
         release {
