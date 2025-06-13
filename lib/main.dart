@@ -1,4 +1,5 @@
 import 'package:firmware_client/page/check_page.dart';
+import 'package:firmware_client/page/main_tab_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -38,7 +39,7 @@ class MyApp extends StatelessWidget {
                     seedColor: Colors.deepPurple,
                   ),
                 ),
-          home: const MyHomePage(title: 'SamLoadF'),
+          home: const MainTabPage(),
         );
       },
     );

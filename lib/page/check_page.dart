@@ -171,6 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
         outputPath.isEmpty) {
       setState(() {
         _downloadStatus = '错误: 所有字段都不能为空';
+        _downloadStatusEnum = DownloadStatus.notStarted;
       });
       return;
     }

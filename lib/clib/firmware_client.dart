@@ -191,5 +191,46 @@ class FirmwareClient {
     bindings.FreeString(resultC);
   }
 
-  _decryptFirmware(FirmwareMethod method, FirmwareLibBindings bindings) {}
+  _decryptFirmware(FirmwareMethod method, FirmwareLibBindings bindings) {
+    final args = method.arguments;
+    final model = args['model'] as String;
+    final region = args['region'] as String;
+    final fwVersion = args['fwVersion'] as String;
+    final imeiSerial = args['imeiSerial'] as String;
+    final firmwarePath = args['firmwarePath'] as String;
+    final outputPath = args['outputPath'] as String;
+
+    final modelC = model.toNativeUtf8().cast<ffi.Char>();
+    final regionC = region.toNativeUtf8().cast<ffi.Char>();
+    final fwVersionC = fwVersion.toNativeUtf8().cast<ffi.Char>();
+    final imeiSerialC = imeiSerial.toNativeUtf8().cast<ffi.Char>();
+    final firmwarePathC = firmwarePath.toNativeUtf8().cast<ffi.Char>();
+    final outputPathC = outputPath.toNativeUtf8().cast<ffi.Char>();
+
+    final callback = bindings.NewDartCallbackHandle(
+      method.sendPort.nativePort,
+      NativeApi.postCObject.cast<ffi.Void>(),
+    );
+
+    final resuleC = bindings.DecryptFirmware(
+      firmwarePathC,
+      outputPathC,
+      fwVersionC,
+      modelC,
+      regionC,
+      imeiSerialC,
+      callback,
+    );
+
+    final result = resuleC.cast<Utf8>().toDartString();
+    method.receove({'type': 'result', 'result': result});
+
+    calloc.free(modelC);
+    calloc.free(regionC);
+    calloc.free(fwVersionC);
+    calloc.free(imeiSerialC);
+    calloc.free(firmwarePathC);
+    calloc.free(outputPathC);
+    bindings.FreeString(resuleC);
+  }
 }
